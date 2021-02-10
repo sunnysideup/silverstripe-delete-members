@@ -1,0 +1,33 @@
+{
+    "name": "sunnysideup/delete-members",
+    "type": "silverstripe-vendormodule",
+    "description": "Deletes all members from a Silverstripe install",
+    "keywords": [
+        "Silverstripe-CMS",
+        "CMS",
+        "Silverstripe",
+        "members",
+        "security",
+        "privacy",
+        "database",
+        "clean up"
+    ],
+    "require": {
+        "silverstripe/framework": "^4.0"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Nicolaas Francken",
+            "email": "modules@sunnysideup.co.nz",
+            "role": "lead developer"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Sunnysideup\\DeleteMembers\\": "src/"
+        }
+    }
+}
