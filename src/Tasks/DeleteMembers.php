@@ -3,10 +3,9 @@
 namespace Sunnysideup\DeleteMembers\Tasks;
 
 use SilverStripe\Control\Director;
-use SilverStripe\Core\Config\Config;
 use SilverStripe\Dev\BuildTask;
-use SilverStripe\ORM\DB;
 use SilverStripe\ORM\DataList;
+use SilverStripe\ORM\DB;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
 
@@ -19,19 +18,17 @@ class DeleteMembers extends BuildTask
 
     protected $description = 'Literally deletes or anonymises all members';
 
-    private static $segment = 'careful-delete-members';
-
     /**
-     *
-     * @var string
-     */
-    private static $always_exclude = '';
-
-    /**
-     *
      * @var string
      */
     protected $exclude = '';
+
+    private static $segment = 'careful-delete-members';
+
+    /**
+     * @var string
+     */
+    private static $always_exclude = '';
 
     public function run($request)
     {
@@ -50,8 +47,8 @@ class DeleteMembers extends BuildTask
             }
         }
         if ($type) {
-            DB::alteration_message('Excluded phrases: "' . implode(', ', $this->excludeArray()) . '"' );
-            foreach($this->excludedMembers() as $member) {
+            DB::alteration_message('Excluded phrases: "' . implode(', ', $this->excludeArray()) . '"');
+            foreach ($this->excludedMembers() as $member) {
                 DB::alteration_message('Excluding: ' . $member->Email);
             }
             switch ($type) {
@@ -82,36 +79,34 @@ class DeleteMembers extends BuildTask
         }
     }
 
-    public function getMembers() : DataList
+    public function getMembers(): DataList
+    {
+        return Member::get()->subtract($this->excludedMembers());
+    }
+
+    public function excludedMembers(): DataList
     {
         $list = Member::get();
+        $myId = 0;
         $me = Security::getCurrentUser();
         if ($me && $me->ID) {
-            $list = $list->excludeAny(
-                [
-                    'ID' => $me->ID,
-                    'Email:PartialMatch' => $this->excludeArray()
-                ]
-            );
+            $myId = $me->ID;
         }
-        return $list;
-    }
-
-    public function excludedMembers() : DataList
-    {
-        $list = $this->getMembers();
-        return Member::get()->subtract($list);
-    }
-
-    protected function excludeArray() : array
-    {
-        return array_filter(
+        return $list->filterAny(
             [
-                trim($this->Config()->get('always_exclude')),
-                $this->exclude,
+                'ID' => $myId,
+                'Email:PartialMatch' => $this->excludeArray(),
             ]
         );
+    }
 
+    protected function excludeArray(): array
+    {
+        $string = $this->Config()->get('always_exclude') . ', ' . $this->exclude;
+        $array = explode(',', $string);
+        $array = array_map('trim', $array);
+
+        return array_filter($array);
     }
 
     protected function getForm()
@@ -124,15 +119,16 @@ class DeleteMembers extends BuildTask
     <label for="type">Action</label>
     <br />
     <select name="type">
-        <option value=""></option>
-        <option value="delete">delete</option>
-        <option value="anonymise">anonymise</option>
+        <option value="">--- please select type of action --- </option>
+        <option value="test">test only</option>
+        <option value="delete">delete !</option>
+        <option value="anonymise">anonymise !</option>
     </select>
     <br />
     <br />
-    <label for="name">exclude email snippets (exclude phrases (e.g. @mysite.co.nz), separated by comma)</label>
+    <label for="name">exclude email snippets (e.g. "@mysite.co.nz" or "john.smith", separated by comma)</label>
     <br />
-    <input name="exclude" type="text" />
+    <input name="exclude" type="text" value="' . $this->exclude . '" />
     <br />
     <br />
     <input name="go" type="submit" />
