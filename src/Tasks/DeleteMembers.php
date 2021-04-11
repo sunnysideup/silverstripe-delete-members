@@ -10,7 +10,7 @@ use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
 
 /**
- * deletes or anonymises all members
+ * deletes or anonymises all members.
  */
 class DeleteMembers extends BuildTask
 {
@@ -56,12 +56,14 @@ class DeleteMembers extends BuildTask
                     foreach ($this->getMembers() as $member) {
                         DB::alteration_message('To be deleted / anonymised ' . $member->Email, 'deleted');
                     }
+
                     break;
                 case 'delete':
                     foreach ($this->getMembers() as $member) {
                         DB::alteration_message('DELETING ' . $member->Email, 'deleted');
                         $member->delete();
                     }
+
                     break;
                 case 'anonymise':
                     foreach ($this->getMembers() as $member) {
@@ -71,6 +73,7 @@ class DeleteMembers extends BuildTask
                         $member->Email = rand(0, 99999999999) . '@fake-address-nice-try.co.nz';
                         $member->write();
                     }
+
                     break;
                 default:
                     user_error('Wrong type of action supplied: ' . $type);
@@ -92,6 +95,7 @@ class DeleteMembers extends BuildTask
         if ($me && $me->ID) {
             $myId = $me->ID;
         }
+
         return $list->filterAny(
             [
                 'ID' => $myId,
