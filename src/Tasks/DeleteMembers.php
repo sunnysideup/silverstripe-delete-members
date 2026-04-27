@@ -48,6 +48,7 @@ class DeleteMembers extends BuildTask
                 echo $this->getForm();
             }
         }
+
         if ($type) {
             DB::alteration_message('Excluded phrases: "' . implode(', ', $this->excludeArray()) . '"');
             foreach ($this->excludedMembers() as $member) {
@@ -84,6 +85,7 @@ class DeleteMembers extends BuildTask
 
             DB::alteration_message('--- DONE ---');
         }
+
         return 0;
     }
 
