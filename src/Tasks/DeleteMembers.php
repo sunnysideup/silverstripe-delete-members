@@ -2,6 +2,8 @@
 
 namespace Sunnysideup\DeleteMembers\Tasks;
 
+use Symfony\Component\Console\Input\InputInterface;
+use SilverStripe\Console\PolyOutput;
 use SilverStripe\Control\Director;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DataList;
@@ -14,7 +16,7 @@ use SilverStripe\Security\Security;
  */
 class DeleteMembers extends BuildTask
 {
-    protected $title = 'Deletes all members';
+    protected string $title = 'Deletes all members';
 
     protected $description = 'Literally deletes or anonymises all members';
 
@@ -23,14 +25,14 @@ class DeleteMembers extends BuildTask
      */
     protected $exclude = '';
 
-    private static $segment = 'careful-delete-members';
+    protected static string $commandName = 'careful-delete-members';
 
     /**
      * @var string
      */
     private static $always_exclude = '';
 
-    public function run($request)
+    protected function execute(InputInterface $input, PolyOutput $output): int
     {
         if (Director::is_cli()) {
             $args = $request->getVar('args');
@@ -46,7 +48,6 @@ class DeleteMembers extends BuildTask
                 echo $this->getForm();
             }
         }
-
         if ($type) {
             DB::alteration_message('Excluded phrases: "' . implode(', ', $this->excludeArray()) . '"');
             foreach ($this->excludedMembers() as $member) {
@@ -83,6 +84,7 @@ class DeleteMembers extends BuildTask
 
             DB::alteration_message('--- DONE ---');
         }
+        return 0;
     }
 
     public function getMembers(): DataList
