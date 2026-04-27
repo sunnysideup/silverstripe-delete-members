@@ -46,11 +46,13 @@ class DeleteMembers extends BuildTask
                 echo $this->getForm();
             }
         }
+
         if ($type) {
             DB::alteration_message('Excluded phrases: "' . implode(', ', $this->excludeArray()) . '"');
             foreach ($this->excludedMembers() as $member) {
                 DB::alteration_message('Excluding: ' . $member->Email);
             }
+
             switch ($type) {
                 case 'test':
                     foreach ($this->getMembers() as $member) {
@@ -68,9 +70,9 @@ class DeleteMembers extends BuildTask
                 case 'anonymise':
                     foreach ($this->getMembers() as $member) {
                         DB::alteration_message('ANONYMISING ' . $member->Email, 'deleted');
-                        $member->Surname = rand(0, 99999999999);
-                        $member->FirstName = rand(0, 99999999999);
-                        $member->Email = rand(0, 99999999999) . '@fake-address-nice-try.co.nz';
+                        $member->Surname = random_int(0, 99999999999);
+                        $member->FirstName = random_int(0, 99999999999);
+                        $member->Email = random_int(0, 99999999999) . '@fake-address-nice-try.co.nz';
                         $member->write();
                     }
 
@@ -78,6 +80,7 @@ class DeleteMembers extends BuildTask
                 default:
                     user_error('Wrong type of action supplied: ' . $type);
             }
+
             DB::alteration_message('--- DONE ---');
         }
     }
@@ -108,7 +111,7 @@ class DeleteMembers extends BuildTask
     {
         $string = $this->Config()->get('always_exclude') . ', ' . $this->exclude;
         $array = explode(',', $string);
-        $array = array_map('trim', $array);
+        $array = array_map(trim(...), $array);
 
         return array_filter($array);
     }
