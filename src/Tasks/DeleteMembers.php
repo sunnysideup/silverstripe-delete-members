@@ -2,14 +2,14 @@
 
 namespace Sunnysideup\DeleteMembers\Tasks;
 
-use Symfony\Component\Console\Input\InputInterface;
-use SilverStripe\Console\PolyOutput;
-use SilverStripe\Control\Director;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DataList;
-use SilverStripe\ORM\DB;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
+use SilverStripe\PolyExecution\PolyOutput;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 
 /**
  * deletes or anonymises all members.
@@ -18,7 +18,7 @@ class DeleteMembers extends BuildTask
 {
     protected string $title = 'Deletes all members';
 
-    protected $description = 'Literally deletes or anonymises all members';
+    protected static string $description = 'Literally deletes or anonymises all members';
 
     /**
      * @var string
@@ -34,59 +34,59 @@ class DeleteMembers extends BuildTask
 
     protected function execute(InputInterface $input, PolyOutput $output): int
     {
-        if (Director::is_cli()) {
-            $args = $request->getVar('args');
-            $type = $args[0] ?? '';
-            $this->exclude = $args[1] ?? '';
-            if (! $type) {
-                echo 'Please choose "test" or "delete" or "anonymise" as options';
-            }
-        } else {
-            $type = $request->postVar('type');
-            $this->exclude = $request->postVar('exclude');
-            if (! $type) {
-                echo $this->getForm();
-            }
+        // Get options from CLI input
+        $type = $input->getOption('type');
+        $this->exclude = $input->getOption('exclude') ?: '';
+
+        if (!$type) {
+            $output->writeln('<error>Please choose "test" or "delete" or "anonymise" as options</error>');
+            return Command::FAILURE;
         }
 
-        if ($type) {
-            DB::alteration_message('Excluded phrases: "' . implode(', ', $this->excludeArray()) . '"');
-            foreach ($this->excludedMembers() as $member) {
-                DB::alteration_message('Excluding: ' . $member->Email);
-            }
-
-            switch ($type) {
-                case 'test':
-                    foreach ($this->getMembers() as $member) {
-                        DB::alteration_message('To be deleted / anonymised ' . $member->Email, 'deleted');
-                    }
-
-                    break;
-                case 'delete':
-                    foreach ($this->getMembers() as $member) {
-                        DB::alteration_message('DELETING ' . $member->Email, 'deleted');
-                        $member->delete();
-                    }
-
-                    break;
-                case 'anonymise':
-                    foreach ($this->getMembers() as $member) {
-                        DB::alteration_message('ANONYMISING ' . $member->Email, 'deleted');
-                        $member->Surname = random_int(0, 99999999999);
-                        $member->FirstName = random_int(0, 99999999999);
-                        $member->Email = random_int(0, 99999999999) . '@fake-address-nice-try.co.nz';
-                        $member->write();
-                    }
-
-                    break;
-                default:
-                    user_error('Wrong type of action supplied: ' . $type);
-            }
-
-            DB::alteration_message('--- DONE ---');
+        // Display excluded phrases
+        $output->writeln('Excluded phrases: "' . implode(', ', $this->excludeArray()) . '"');
+        foreach ($this->excludedMembers() as $member) {
+            $output->writeln('Excluding: ' . $member->Email);
         }
 
-        return 0;
+        switch ($type) {
+            case 'test':
+                foreach ($this->getMembers() as $member) {
+                    $output->writeln('<comment>To be deleted / anonymised ' . $member->Email . '</comment>');
+                }
+                break;
+
+            case 'delete':
+                foreach ($this->getMembers() as $member) {
+                    $output->writeln('<error>DELETING ' . $member->Email . '</error>');
+                    $member->delete();
+                }
+                break;
+
+            case 'anonymise':
+                foreach ($this->getMembers() as $member) {
+                    $output->writeln('<comment>ANONYMISING ' . $member->Email . '</comment>');
+                    $member->Surname = random_int(0, 99999999999);
+                    $member->FirstName = random_int(0, 99999999999);
+                    $member->Email = random_int(0, 99999999999) . '@fake-address-nice-try.co.nz';
+                    $member->write();
+                }
+                break;
+
+            default:
+                $output->writeln('<error>Wrong type of action supplied: ' . $type . '</error>');
+                return Command::FAILURE;
+        }
+
+        return Command::SUCCESS;
+    }
+
+    public function getOptions(): array
+    {
+        return [
+            new InputOption('type', 't', InputOption::VALUE_REQUIRED, 'Action type: "test", "delete", or "anonymise"'),
+            new InputOption('exclude', 'e', InputOption::VALUE_OPTIONAL, 'Exclude email snippets (e.g. "@mysite.co.nz" or "john.smith"), separated by comma'),
+        ];
     }
 
     public function getMembers(): DataList
@@ -118,32 +118,5 @@ class DeleteMembers extends BuildTask
         $array = array_map(trim(...), $array);
 
         return array_filter($array);
-    }
-
-    protected function getForm()
-    {
-        return '
-<h1>Number of Members in Database: ' . Member::get()->count() . '</h1>
-<form method="post" action="/dev/tasks/' . $this->Config()->get('segment') . '" >
-    <br />
-    <br />
-    <label for="type">Action</label>
-    <br />
-    <select name="type">
-        <option value="">--- please select type of action --- </option>
-        <option value="test">test only</option>
-        <option value="delete">delete !</option>
-        <option value="anonymise">anonymise !</option>
-    </select>
-    <br />
-    <br />
-    <label for="name">exclude email snippets (e.g. "@mysite.co.nz" or "john.smith", separated by comma)</label>
-    <br />
-    <input name="exclude" type="text" value="' . $this->exclude . '" />
-    <br />
-    <br />
-    <input name="go" type="submit" />
-</form>
-        ';
     }
 }
