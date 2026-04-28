@@ -2,6 +2,7 @@
 
 namespace Sunnysideup\DeleteMembers\Tasks;
 
+use Override;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DataList;
 use SilverStripe\Security\Member;
@@ -54,6 +55,7 @@ class DeleteMembers extends BuildTask
                 foreach ($this->getMembers() as $member) {
                     $output->writeln('<comment>To be deleted / anonymised ' . $member->Email . '</comment>');
                 }
+
                 break;
 
             case 'delete':
@@ -61,6 +63,7 @@ class DeleteMembers extends BuildTask
                     $output->writeln('<error>DELETING ' . $member->Email . '</error>');
                     $member->delete();
                 }
+
                 break;
 
             case 'anonymise':
@@ -71,6 +74,7 @@ class DeleteMembers extends BuildTask
                     $member->Email = random_int(0, 99999999999) . '@fake-address-nice-try.co.nz';
                     $member->write();
                 }
+
                 break;
 
             default:
@@ -81,6 +85,7 @@ class DeleteMembers extends BuildTask
         return Command::SUCCESS;
     }
 
+    #[Override]
     public function getOptions(): array
     {
         return [
