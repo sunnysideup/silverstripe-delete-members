@@ -3,11 +3,13 @@
 namespace Sunnysideup\DeleteMembers\Tasks;
 
 use SilverStripe\Control\Director;
+use SilverStripe\Core\Convert;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DB;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
+use SilverStripe\Security\SecurityToken;
 
 /**
  * deletes or anonymises all members.
@@ -42,9 +44,21 @@ class DeleteMembers extends BuildTask
         } else {
             $type = $request->postVar('type');
             $this->exclude = $request->postVar('exclude');
+            // deleting or anonymising can only be done with the form on this page (so not from a link on another website).
+            if ($type && ! SecurityToken::inst()->checkRequest($request)) {
+                DB::alteration_message('Sorry, the security token is missing or has expired. Please use the form.', 'error');
+                $type = '';
+            }
+
             if (! $type) {
                 echo $this->getForm();
             }
+        }
+
+        if ($type && 'test' !== $type && Director::isLive()) {
+            DB::alteration_message('Members can not be deleted or anonymised on a live site.', 'error');
+
+            return;
         }
 
         if ($type) {
@@ -120,7 +134,8 @@ class DeleteMembers extends BuildTask
     {
         return '
 <h1>Number of Members in Database: ' . Member::get()->count() . '</h1>
-<form method="post" action="/dev/tasks/' . $this->Config()->get('segment') . '" >
+<form method="post" action="/dev/tasks/' . Convert::raw2att($this->Config()->get('segment')) . '" >
+    <input type="hidden" name="' . Convert::raw2att(SecurityToken::inst()->getName()) . '" value="' . Convert::raw2att(SecurityToken::inst()->getValue()) . '" />
     <br />
     <br />
     <label for="type">Action</label>
@@ -135,7 +150,7 @@ class DeleteMembers extends BuildTask
     <br />
     <label for="name">exclude email snippets (e.g. "@mysite.co.nz" or "john.smith", separated by comma)</label>
     <br />
-    <input name="exclude" type="text" value="' . $this->exclude . '" />
+    <input name="exclude" type="text" value="' . Convert::raw2att((string) $this->exclude) . '" />
     <br />
     <br />
     <input name="go" type="submit" />
