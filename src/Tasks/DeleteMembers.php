@@ -11,6 +11,7 @@ use SilverStripe\PolyExecution\PolyOutput;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use SilverStripe\Control\Director;
 
 /**
  * deletes or anonymises all members.
@@ -42,6 +43,21 @@ class DeleteMembers extends BuildTask
         if (!$type) {
             $output->writeln('<error>Please choose "test" or "delete" or "anonymise" as options</error>');
             return Command::FAILURE;
+        }
+
+        // deleting or anonymising members is only done on the command line and never on a live site.
+        if ('test' !== $type) {
+            if (! Director::is_cli()) {
+                $output->writeln('Members can only be deleted or anonymised on the command line.');
+
+                return Command::FAILURE;
+            }
+
+            if (Director::isLive()) {
+                $output->writeln('Members can not be deleted or anonymised on a live site.');
+
+                return Command::FAILURE;
+            }
         }
 
         // Display excluded phrases
